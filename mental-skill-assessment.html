@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>メンタルスキル・フィードバックシート</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyByUItwob4nyagm_WRgyhkEmJ2xNxYrYRc",
+  authDomain: "peak-self.firebaseapp.com",
+  projectId: "peak-self",
+  storageBucket: "peak-self.firebasestorage.app",
+  messagingSenderId: "58858314342",
+  appId: "1:58858314342:web:4c3a0d3ea03561f9322ba7"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.saveAssessment = async (data) => {
+  try {
+    await addDoc(collection(db, 'assessments'), {
+      ...data,
+      savedAt: serverTimestamp(),
+    });
+    console.log('Saved to Firebase');
+  } catch(e) {
+    console.error('Save error:', e);
+  }
+};
+</script>
+<style>
+:root{
+  --bg:#0f0e0d;--bg2:#161513;--bg3:#1d1b18;--card:#1a1916;
+  --border:#2e2b26;--border2:#3a3630;
+  --gold:#c9a96e;--gold2:#e8c98a;--gold-dim:rgba(201,169,110,0.10);--gold-glow:rgba(201,169,110,0.22);
+  --text:#e8e2d8;--text2:#a89f90;--text3:#6b6358;
+  --green:#7aab8a;--amber:#d4935a;--red:#c06060;
+  --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-weight:300;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.4}
+
+/* ——— SCREENS ——— */
+.screen{display:none}
+.screen.active{display:block;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* ——— INTRO ——— */
+#intro{min-height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center}
+#intro.active{display:flex}
+.brand-label{font-family:'Cormorant Garamond',serif;font-size:10px;letter-spacing:7px;color:var(--gold);margin-bottom:16px;opacity:.8}
+.intro-title{font-family:'Cormorant Garamond',serif;font-size:clamp(28px,5vw,48px);font-weight:300;line-height:1.2;margin-bottom:8px}
+.intro-title em{font-style:italic;color:var(--gold2)}
+.intro-sub{font-size:12px;color:var(--text3);letter-spacing:3px;margin-bottom:32px}
+.intro-divider{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:0 auto 32px}
+.intro-desc{font-size:13px;color:var(--text2);line-height:2;max-width:480px;margin:0 auto 40px}
+.intro-desc strong{color:var(--gold2);font-weight:400}
+.name-input-wrap{margin-bottom:32px;width:100%;max-width:320px}
+.name-input-wrap label{display:block;font-size:11px;color:var(--text3);letter-spacing:2px;margin-bottom:8px}
+.name-input-wrap input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:300;padding:12px 16px;outline:none;transition:border-color .2s;text-align:center}
+.name-input-wrap input:focus{border-color:var(--gold)}
+.start-btn{background:transparent;border:1px solid var(--gold);color:var(--gold2);font-family:'Cormorant Garamond',serif;font-size:16px;letter-spacing:5px;padding:16px 48px;border-radius:40px;cursor:pointer;transition:all .3s}
+.start-btn:hover{background:var(--gold-dim);box-shadow:0 0 28px var(--gold-glow)}
+.intro-fields{width:100%;max-width:480px;margin-bottom:32px}
+.intro-field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.intro-field label{display:block;font-size:11px;color:var(--text3);letter-spacing:2px;margin-bottom:6px}
+.intro-field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:"Noto Sans JP",sans-serif;font-size:14px;font-weight:300;padding:10px 14px;outline:none;transition:border-color .2s}
+.intro-field input:focus{border-color:var(--gold)}
+.intro-field input[type="date"]{color-scheme:dark}
+@media(max-width:480px){.intro-field-row{grid-template-columns:1fr}}
+
+/* ——— QUESTION SCREEN ——— */
+#quiz{min-height:100vh;display:none;flex-direction:column;align-items:center;padding:40px 24px 60px}
+#quiz.active{display:flex}
+.quiz-header{width:100%;max-width:640px;margin-bottom:40px;text-align:center}
+.quiz-counter{font-size:11px;color:var(--text3);letter-spacing:3px;margin-bottom:12px}
+.quiz-progress-track{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:32px}
+.quiz-progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width .5s ease}
+.question-card{width:100%;max-width:640px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:40px 36px;margin-bottom:32px}
+.q-num{font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--gold);letter-spacing:3px;margin-bottom:16px}
+.q-text{font-size:16px;font-weight:400;color:var(--text);line-height:1.8;margin-bottom:8px}
+.q-scale-hint{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:20px;margin-top:20px}
+.scale-btns{display:grid;grid-template-columns:repeat(11,1fr);gap:6px}
+.scale-btn{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;padding:14px 4px;cursor:pointer;transition:all .2s;text-align:center}
+.scale-btn:hover{border-color:var(--gold);color:var(--gold2);background:var(--gold-dim)}
+.scale-btn.selected{border-color:var(--gold);background:var(--gold-dim);color:var(--gold2);box-shadow:0 0 12px var(--gold-glow)}
+.quiz-nav{display:flex;gap:12px;width:100%;max-width:640px;justify-content:center}
+.nav-btn{background:transparent;border:1px solid var(--border);color:var(--text3);font-family:'Noto Sans JP',sans-serif;font-size:12px;letter-spacing:2px;padding:12px 28px;border-radius:40px;cursor:pointer;transition:all .3s}
+.nav-btn.primary{border-color:var(--gold);color:var(--gold2)}
+.nav-btn.primary:hover{background:var(--gold-dim);box-shadow:0 0 20px var(--gold-glow)}
+.nav-btn:hover{border-color:var(--text3);color:var(--text)}
+.nav-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* ——— RESULT SCREEN ——— */
+#result{display:none;padding:48px 24px 80px}
+#result.active{display:block}
+.result-wrap{max-width:860px;margin:0 auto}
+.result-header{text-align:center;margin-bottom:40px}
+.result-name{font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--text3);letter-spacing:3px;margin-bottom:8px}
+.result-title{font-family:'Cormorant Garamond',serif;font-size:clamp(26px,4vw,40px);font-weight:300;color:var(--text);margin-bottom:8px}
+.result-title em{font-style:italic;color:var(--gold2)}
+.result-date{font-size:11px;color:var(--text3);letter-spacing:2px}
+
+/* TOTAL SCORE */
+.total-card{background:linear-gradient(135deg,var(--card),#1a1610);border:1px solid rgba(201,169,110,.25);border-radius:var(--radius);padding:32px;text-align:center;margin-bottom:24px}
+.total-score-num{font-family:'Cormorant Garamond',serif;font-size:80px;font-weight:300;color:var(--gold2);line-height:1}
+.total-score-den{font-size:14px;color:var(--text3);letter-spacing:2px;margin-top:4px}
+.total-rank{display:inline-block;margin-top:12px;font-size:13px;letter-spacing:3px;padding:6px 20px;border-radius:20px;border:1px solid var(--gold);color:var(--gold2);background:var(--gold-dim)}
+.total-comment{font-size:13px;color:var(--text2);line-height:1.9;margin-top:16px;max-width:500px;margin-left:auto;margin-right:auto}
+
+/* CHART */
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 32px;margin-bottom:24px}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;color:var(--gold);letter-spacing:1px;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.card-title::before{content:'';width:3px;height:18px;background:linear-gradient(180deg,var(--gold),var(--gold2));border-radius:2px;flex-shrink:0}
+.radar-wrap{position:relative;height:380px}
+.bar-wrap{position:relative;height:420px}
+
+/* CATEGORY SCORES */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+.cat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px}
+.cat-name{font-size:11px;color:var(--text3);letter-spacing:2px;margin-bottom:8px}
+.cat-score-row{display:flex;align-items:baseline;gap:6px}
+.cat-score{font-family:'Cormorant Garamond',serif;font-size:32px;color:var(--gold2);font-weight:300;line-height:1}
+.cat-den{font-size:11px;color:var(--text3)}
+.cat-bar-track{height:4px;background:var(--border2);border-radius:2px;margin-top:8px;overflow:hidden}
+.cat-bar-fill{height:100%;border-radius:2px;transition:width 1s ease}
+
+/* Q DETAIL */
+.q-detail-grid{display:grid;gap:8px}
+.q-detail-row{display:grid;grid-template-columns:24px 1fr 60px;gap:12px;align-items:center;padding:10px 14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)}
+.q-detail-num{font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--text3);text-align:center}
+.q-detail-text{font-size:12px;color:var(--text2);line-height:1.6}
+.q-detail-score{font-family:'Cormorant Garamond',serif;font-size:22px;text-align:right}
+.q-detail-score.high{color:var(--green)}
+.q-detail-score.mid{color:var(--gold2)}
+.q-detail-score.low{color:var(--red)}
+
+/* RETRY BTN */
+.retry-btn{display:block;width:100%;max-width:280px;margin:32px auto 0;background:transparent;border:1px solid var(--gold);color:var(--gold2);font-family:'Cormorant Garamond',serif;font-size:15px;letter-spacing:4px;padding:14px 32px;border-radius:40px;cursor:pointer;transition:all .3s}
+.retry-btn:hover{background:var(--gold-dim);box-shadow:0 0 24px var(--gold-glow)}
+
+@media(max-width:520px){
+  .scale-btns{grid-template-columns:repeat(6,1fr)}
+  .question-card{padding:28px 20px}
+  .cat-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== INTRO ====== -->
+<div id="intro" class="screen active">
+  <div class="brand-label">MENTAL SKILL ASSESSMENT</div>
+  <h1 class="intro-title">メンタルスキル<br><em>フィードバックシート</em></h1>
+  <p class="intro-sub">MENTAL PERFORMANCE DIAGNOSIS</p>
+  <div class="intro-divider"></div>
+  <p class="intro-desc">
+    <strong>24の質問</strong>に答えるだけで、あなたのメンタルスキルを<br>
+    <strong>12の能力</strong>に分けて可視化します。<br><br>
+    各質問に <strong>0〜10</strong> の数値で回答してください。<br>
+    0 = 全くあてはまらない　10 = 完全にあてはまる
+  </p>
+  <div class="intro-fields">
+    <div class="intro-field-row">
+      <div class="intro-field">
+        <label>お名前</label>
+        <input type="text" id="userName" placeholder="">
+      </div>
+      <div class="intro-field">
+        <label>競技名</label>
+        <input type="text" id="userSport" placeholder="">
+      </div>
+    </div>
+    <div class="intro-field-row">
+      <div class="intro-field">
+        <label>診断日</label>
+        <input type="date" id="diagDate">
+      </div>
+      <div class="intro-field">
+        <label>担当コーチ名</label>
+        <input type="text" id="coachName" placeholder="">
+      </div>
+    </div>
+  </div>
+  <button class="start-btn" onclick="startQuiz()">診断スタート →</button>
+</div>
+
+<!-- ====== QUIZ ====== -->
+<div id="quiz" class="screen">
+  <div class="quiz-header">
+    <div class="quiz-counter" id="quizCounter">Question 1 / 24</div>
+    <div class="quiz-progress-track">
+      <div class="quiz-progress-fill" id="quizProgress" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="question-card">
+    <div class="q-num" id="qNum">Q 01</div>
+    <div class="q-text" id="qText"></div>
+    <div class="q-scale-hint">
+      <span>0 = 全くあてはまらない</span>
+      <span>10 = 完全にあてはまる</span>
+    </div>
+    <div class="scale-btns" id="scaleBtns"></div>
+  </div>
+
+  <div class="quiz-nav">
+    <button class="nav-btn" id="prevBtn" onclick="prevQ()" disabled>← 前へ</button>
+    <button class="nav-btn primary" id="nextBtn" onclick="nextQ()" disabled>次へ →</button>
+  </div>
+</div>
+
+<!-- ====== RESULT ====== -->
+<div id="result" class="screen">
+  <div class="result-wrap">
+    <div class="result-header">
+      <div class="result-name" id="resultName"></div>
+      <h2 class="result-title">メンタルスキル<em>診断結果</em></h2>
+      <div class="result-date" id="resultDate"></div>
+    </div>
+
+    <!-- TOTAL -->
+    <div class="total-card">
+      <div class="total-score-num" id="totalNum">0</div>
+      <div class="total-score-den">/ 240点満点</div>
+      <div class="total-rank" id="totalRank">—</div>
+      <p class="total-comment" id="totalComment"></p>
+    </div>
+
+    <!-- RADAR -->
+    <div class="chart-card">
+      <div class="card-title">12スキル レーダーチャート</div>
+      <div class="radar-wrap"><canvas id="radarChart"></canvas></div>
+    </div>
+
+    <!-- CATEGORY SCORES -->
+    <div class="cat-grid" id="catGrid"></div>
+
+    <!-- BAR CHART -->
+    <div class="chart-card">
+      <div class="card-title">スキル別スコア</div>
+      <div class="bar-wrap"><canvas id="barChart"></canvas></div>
+    </div>
+
+    <!-- Q DETAIL -->
+    <div class="chart-card">
+      <div class="card-title">全設問の回答</div>
+      <div class="q-detail-grid" id="qDetailGrid"></div>
+    </div>
+
+    <button class="retry-btn" onclick="retryQuiz()">もう一度診断する</button>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  'ネガティブになってもセルフトークで前向きな気持ちに変えられる',
+  '自分のやる気や成長が向上する効果的な目標設定ができている',
+  '未来や過去、評価にとらわれずに目の前にフォーカスすることができる',
+  '部屋や道具、書類、連絡など常に整理整頓できている',
+  '自分や他者のアイディアを行動に移すことが得意だ',
+  'やると決めた行動を粘り強く継続することができる',
+  '自分の課題に対して、どんな能力や行動が必要かをいつも明確にしている',
+  '難しい状況でこそ、「自分の最大値」を発揮することに挑戦している',
+  '感謝心、貢献心を常に最大限、自分の心に持つ事ができている',
+  '自分のモチベーションの源泉（コアバリュー）が明確である',
+  '自分は夢や目標を達成できる人間だと自信を持って言える',
+  '誰に対しても自分の考えや意見を明確に伝え、聞くことができる',
+  '自分の実力を発揮できる条件を知っている',
+  '強い相手に対しても最後まで自分のプレーをやり抜くことができる',
+  '自分を自分で磨き、成長させる能力に自信がある',
+  '試合や練習での行動目標を明確にしてプレーできている',
+  'ミスの後やプレッシャーがかかる場面でのワンプレーに集中できる',
+  '苦手な事も上達するために何が必要か具体的に考え、行動できる',
+  '高い目標や困難な課題に対しても行動を継続できる',
+  '常時、自分を良い状態へモチベート（動機付け）することができる',
+  '周りの人を励ます声掛けやアドバイスをすることができる',
+  'ミスやプレッシャー時にセルフトークで冷静になれる',
+  '自分なら必ず目標を達成できると心の底から思えている',
+  '試合で自分がゾーンに入るアプローチをすることができる',
+];
+
+// 12 categories: each has [q_index_a, q_index_b] (0-based)
+// From the Excel: formula shows pairs like (C4+C25)/2 = Q1+Q22, (C10+C21)/2 = Q7+Q18 etc.
+const CATEGORIES = [
+  { name: 'セルフトーク',       qs: [0, 21] },  // Q1, Q22
+  { name: '問題解決力',         qs: [9, 20] },  // Q10, Q21
+  { name: '目標設定',           qs: [4, 18] },  // Q5, Q19
+  { name: '自己基盤',           qs: [6, 11] },  // Q7, Q12
+  { name: '行動力',             qs: [7, 21] },  // Q8, Q22 ※ adjusted
+  { name: '成長マインドセット', qs: [10, 17] }, // Q11, Q18
+  { name: 'グリット',           qs: [8, 16] },  // Q9, Q17
+  { name: 'モチベーション',     qs: [12, 22] }, // Q13, Q23
+  { name: 'セルフイメージ',     qs: [13, 23] }, // Q14, Q24
+  { name: 'ゾーンスキル',       qs: [15, 19] }, // Q16, Q20 ※ adjusted
+  { name: 'チームワーク能力',   qs: [14, 20] }, // Q15, Q21
+  { name: 'フォーカス（集中力）',qs: [5, 2] },  // Q6, Q3
+];
+
+const CAT_COLORS = [
+  '#c9a96e','#7aab8a','#6b9ab8','#c47a3a','#a78bfa','#e879a0',
+  '#5cb8b2','#d4935a','#8abf6a','#e8c98a','#9a8bfa','#7aab8a'
+];
+
+let answers = new Array(24).fill(null);
+let currentQ = 0;
+let userName = '';
+let userSport = '';
+let coachName = '';
+let diagDate = '';
+
+function startQuiz(){
+  userName = document.getElementById('userName').value.trim();
+  userSport = document.getElementById('userSport').value.trim();
+  coachName = document.getElementById('coachName').value.trim();
+  const dateVal = document.getElementById('diagDate').value;
+  diagDate = dateVal ? new Date(dateVal).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'}) : new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderQuestion(){
+  const q = currentQ;
+  document.getElementById('quizCounter').textContent = `Question ${q+1} / 24`;
+  document.getElementById('quizProgress').style.width = ((q)/24*100)+'%';
+  document.getElementById('qNum').textContent = `Q ${String(q+1).padStart(2,'0')}`;
+  document.getElementById('qText').textContent = QUESTIONS[q];
+
+  // Build scale buttons 0-10
+  const wrap = document.getElementById('scaleBtns');
+  wrap.innerHTML = '';
+  for(let i=0;i<=10;i++){
+    const btn = document.createElement('button');
+    btn.className = 'scale-btn' + (answers[q]===i?' selected':'');
+    btn.textContent = i;
+    btn.onclick = () => selectAnswer(i);
+    wrap.appendChild(btn);
+  }
+
+  document.getElementById('prevBtn').disabled = (q===0);
+  document.getElementById('nextBtn').disabled = (answers[q]===null);
+  document.getElementById('nextBtn').textContent = (q===23) ? '結果を見る ✦' : '次へ →';
+}
+
+function selectAnswer(val){
+  answers[currentQ] = val;
+  document.querySelectorAll('.scale-btn').forEach((b,i)=>{
+    b.classList.toggle('selected', i===val);
+  });
+  document.getElementById('nextBtn').disabled = false;
+}
+
+function nextQ(){
+  if(answers[currentQ]===null) return;
+  if(currentQ===23){ showResult(); return; }
+  currentQ++;
+  renderQuestion();
+}
+
+function prevQ(){
+  if(currentQ===0) return;
+  currentQ--;
+  renderQuestion();
+}
+
+function showResult(){
+  showScreen('result');
+  buildResult();
+}
+
+function buildResult(){
+  const today = new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  document.getElementById('resultDate').textContent = diagDate;
+  let nameStr = '';
+  if(userName) nameStr += userName + ' さん';
+  if(userSport) nameStr += (nameStr?' · ':'')+userSport;
+  if(coachName) nameStr += (nameStr?' · ':'')+'担当：'+coachName;
+  document.getElementById('resultName').textContent = nameStr;
+
+  const total = answers.reduce((a,b)=>a+(b||0),0);
+  document.getElementById('totalNum').textContent = total;
+
+  // Rank
+  let rank, comment;
+  const pct = total/240*100;
+  if(pct>=85){rank='ELITE PERFORMER';comment='卓越したメンタルスキルを持っています。全ての領域でハイレベルを維持しており、高いパフォーマンスを安定して発揮できる状態です。さらなる高みを目指し、各スキルの精度を磨いていきましょう。';}
+  else if(pct>=70){rank='ADVANCED';comment='非常に高いメンタルスキルを持っています。強みの領域をさらに伸ばしつつ、スコアの低い分野を重点的に強化することで、さらに大きな成果が期待できます。';}
+  else if(pct>=55){rank='DEVELOPING';comment='バランスの取れたメンタルスキルを持っています。いくつかの強みがある一方、成長の余地もあります。弱点領域を意識的にトレーニングすることで、パフォーマンスが向上します。';}
+  else if(pct>=40){rank='BUILDING';comment='メンタルスキルの基礎を築いている段階です。特に低スコアの領域に集中して取り組むことで、全体的なパフォーマンスが大きく改善します。継続的な練習が鍵です。';}
+  else{rank='BEGINNER';comment='メンタルスキルの向上に大きな伸びしろがあります。今の状態を正直に把握できたことが第一歩です。1つずつ、着実にスキルを積み上げていきましょう。';}
+
+  document.getElementById('totalRank').textContent = rank;
+  document.getElementById('totalComment').textContent = comment;
+
+  // Category scores
+  const catScores = CATEGORIES.map(c => {
+    const a = answers[c.qs[0]]||0;
+    const b = answers[c.qs[1]]||0;
+    return (a+b)/2;
+  });
+
+  // Cat cards
+  const catGrid = document.getElementById('catGrid');
+  catGrid.innerHTML = '';
+  CATEGORIES.forEach((c,i)=>{
+    const score = catScores[i];
+    const pct = score/10*100;
+    const div = document.createElement('div');
+    div.className = 'cat-card';
+    div.innerHTML = `
+      <div class="cat-name">${c.name}</div>
+      <div class="cat-score-row">
+        <div class="cat-score">${score.toFixed(1)}</div>
+        <div class="cat-den">/ 10</div>
+      </div>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;background:${CAT_COLORS[i]}"></div></div>
+    `;
+    catGrid.appendChild(div);
+  });
+
+  // Radar chart
+  setTimeout(()=>{
+    const rCtx = document.getElementById('radarChart').getContext('2d');
+    new Chart(rCtx,{
+      type:'radar',
+      data:{
+        labels: CATEGORIES.map(c=>c.name),
+        datasets:[{
+          label:'あなたのスコア',
+          data: catScores,
+          backgroundColor:'rgba(201,169,110,0.12)',
+          borderColor:'rgba(201,169,110,0.7)',
+          pointBackgroundColor:CAT_COLORS,
+          pointBorderColor:'#0f0e0d',
+          pointRadius:6,borderWidth:1.5,
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        scales:{r:{
+          min:0,max:10,
+          ticks:{stepSize:2,color:'rgba(107,99,88,.8)',backdropColor:'transparent',font:{size:9}},
+          grid:{color:'rgba(46,43,38,.8)'},
+          angleLines:{color:'rgba(46,43,38,.8)'},
+          pointLabels:{color:'#a89f90',font:{family:"'Noto Sans JP',sans-serif",size:11,weight:'300'}}
+        }},
+        plugins:{legend:{display:false}}
+      }
+    });
+
+    // Bar chart
+    const bCtx = document.getElementById('barChart').getContext('2d');
+    new Chart(bCtx,{
+      type:'bar',
+      data:{
+        labels: CATEGORIES.map(c=>c.name),
+        datasets:[{
+          label:'スコア',
+          data: catScores,
+          backgroundColor: CAT_COLORS.map(c=>c+'bb'),
+          borderColor: CAT_COLORS,
+          borderWidth:1,
+          borderRadius:6,
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        indexAxis:'y',
+        scales:{
+          x:{min:0,max:10,
+            ticks:{color:'rgba(107,99,88,.8)',font:{size:10}},
+            grid:{color:'rgba(46,43,38,.6)'}
+          },
+          y:{ticks:{color:'#a89f90',font:{family:"'Noto Sans JP',sans-serif",size:11,weight:'300'}},
+            grid:{display:false}
+          }
+        },
+        plugins:{legend:{display:false}}
+      }
+    });
+  },100);
+
+  // Q detail
+  const qGrid = document.getElementById('qDetailGrid');
+  qGrid.innerHTML = '';
+  answers.forEach((v,i)=>{
+    const row = document.createElement('div');
+    row.className = 'q-detail-row';
+    const scoreClass = v>=8?'high':v>=5?'mid':'low';
+    row.innerHTML = `
+      <div class="q-detail-num">${i+1}</div>
+      <div class="q-detail-text">${QUESTIONS[i]}</div>
+      <div class="q-detail-score ${scoreClass}">${v}</div>
+    `;
+    qGrid.appendChild(row);
+  });
+}
+
+function retryQuiz(){
+  answers = new Array(24).fill(null);
+  currentQ = 0;
+  showScreen('intro');
+}
+// Set today as default date
+document.addEventListener('DOMContentLoaded', ()=>{
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('diagDate').value = today;
+});
+</script>
+</body>
+</html>
